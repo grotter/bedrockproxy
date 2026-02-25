@@ -48,7 +48,8 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
             "us.anthropic.claude-opus-4-6",
             "us.anthropic.claude-sonnet-4-6",
             // Claude 4.5 models
-            "us.anthropic.claude-haiku-4-5-20251001",
+            // "us.anthropic.claude-haiku-4-5-20251001",
+            "us.anthropic.claude-haiku-4-5-20251001-v1:0",
             // Claude 3.5 models
             "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
             "us.anthropic.claude-3-5-sonnet-20240620-v1:0",
