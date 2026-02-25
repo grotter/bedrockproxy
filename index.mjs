@@ -1,8 +1,22 @@
 import { BedrockRuntimeClient, InvokeModelCommand, InvokeModelWithResponseStreamCommand } from "@aws-sdk/client-bedrock-runtime";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const bedrock = new BedrockRuntimeClient({ region: "us-west-2" });
 const VALID_API_KEY = process.env.API_KEY;
 const MODEL_ID = process.env.MODEL_ID || "us.anthropic.claude-sonnet-4-6";
+
+// Load and parse inference profiles
+const inferenceProfilesPath = join(__dirname, "inference-profiles.json");
+const inferenceProfilesData = JSON.parse(readFileSync(inferenceProfilesPath, "utf-8"));
+
+// Build availableModels array from inference profiles
+const availableModels = inferenceProfilesData.inferenceProfileSummaries
+    .map(profile => profile.inferenceProfileId);
 
 function httpStream(responseStream, statusCode, contentType) {
     return awslambda.HttpResponseStream.from(responseStream, {
@@ -42,34 +56,13 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     if ((path.endsWith("/v1/models") || path.endsWith("/models")) && httpMethod === "GET") {
         responseStream = httpStream(responseStream, 200, "application/json");
 
-        // List of available Bedrock on-demand models
-        const availableModels = [
-            // Claude 4.6 models
-            "us.anthropic.claude-opus-4-6",
-            "us.anthropic.claude-sonnet-4-6",
-            // Claude 4.5 models
-            // "us.anthropic.claude-haiku-4-5-20251001",
-            "us.anthropic.claude-haiku-4-5-20251001-v1:0",
-            // Claude 3.5 models
-            "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
-            "us.anthropic.claude-3-5-sonnet-20240620-v1:0",
-            "us.anthropic.claude-3-5-haiku-20241022-v1:0",
-            // Claude 3 models
-            "us.anthropic.claude-3-opus-20240229-v1:0",
-            "us.anthropic.claude-3-sonnet-20240229-v1:0",
-            "us.anthropic.claude-3-haiku-20240307-v1:0",
-        ];
-
-        // aws bedrock list-inference-profiles --no-paginate > inference-profiles.json
-
         // Ensure MODEL_ID is first in the list (default model)
         const models = [MODEL_ID, ...availableModels.filter(m => m !== MODEL_ID)];
 
         const modelData = models.map((modelId, index) => ({
             id: modelId,
             object: "model",
-            created: 1677610602 + index,
-            owned_by: "anthropic"
+            created: 1677610602 + index
         }));
 
         responseStream.write(JSON.stringify({
