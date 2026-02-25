@@ -1,0 +1,15 @@
+{
+  "name": "bedrockproxy",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AWS Bedrock Proxy for OpenAI-compatible API",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node local-server.mjs",
+    "dev": "node local-server.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.0.0",
+    "dotenv": "^17.3.1"
+  }
+}

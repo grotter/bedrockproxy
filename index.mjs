@@ -50,10 +50,13 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     const path = event.rawPath || event.path || "";
     const httpMethod = event.requestContext?.http?.method || event.httpMethod || "";
 
+    // Strip query string from path for matching
+    const cleanPath = path.split('?')[0];
+
     // console.log("Request:", JSON.stringify({ path, httpMethod, body: event.body }));
 
     // Handle /v1/models endpoint
-    if ((path.endsWith("/v1/models") || path.endsWith("/models")) && httpMethod === "GET") {
+    if ((cleanPath.endsWith("/v1/models") || cleanPath.endsWith("/models")) && httpMethod === "GET") {
         responseStream = httpStream(responseStream, 200, "application/json");
 
         // Ensure MODEL_ID is first in the list (default model)
