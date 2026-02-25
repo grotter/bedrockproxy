@@ -41,15 +41,41 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     // Handle /v1/models endpoint
     if ((path.endsWith("/v1/models") || path.endsWith("/models")) && httpMethod === "GET") {
         responseStream = httpStream(responseStream, 200, "application/json");
+
+        // List of available Bedrock on-demand models
+        const availableModels = [
+            // Claude 4.6 models
+            "us.anthropic.claude-opus-4-6",
+            "us.anthropic.claude-sonnet-4-6",
+            // Claude 4.5 models
+            "us.anthropic.claude-haiku-4-5-20251001",
+            // Claude 3.5 models
+            "us.anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "us.anthropic.claude-3-5-sonnet-20240620-v1:0",
+            "us.anthropic.claude-3-5-haiku-20241022-v1:0",
+            // Claude 3 models
+            "us.anthropic.claude-3-opus-20240229-v1:0",
+            "us.anthropic.claude-3-sonnet-20240229-v1:0",
+            "us.anthropic.claude-3-haiku-20240307-v1:0",
+        ];
+
+        // aws bedrock list-inference-profiles --no-paginate > inference-profiles.json
+
+        // Ensure MODEL_ID is first in the list (default model)
+        const models = [MODEL_ID, ...availableModels.filter(m => m !== MODEL_ID)];
+
+        const modelData = models.map((modelId, index) => ({
+            id: modelId,
+            object: "model",
+            created: 1677610602 + index,
+            owned_by: "anthropic"
+        }));
+
         responseStream.write(JSON.stringify({
             object: "list",
-            data: [{
-                id: MODEL_ID,
-                object: "model",
-                created: 1677610602,
-                owned_by: "anthropic"
-            }]
+            data: modelData
         }));
+
         responseStream.end();
         return;
     }
