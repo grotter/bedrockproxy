@@ -5,8 +5,9 @@
   "description": "AWS Bedrock Proxy for OpenAI-compatible API",
   "main": "index.mjs",
   "scripts": {
-    "start": "node local-server.mjs",
-    "dev": "node local-server.mjs"
+    "start": "npm run profiles && node local-server.mjs",
+    "dev": "npm run profiles && node local-server.mjs",
+    "profiles": "aws bedrock list-inference-profiles --no-paginate > inference-profiles.json"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.0.0",
