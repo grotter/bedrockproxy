@@ -18,6 +18,10 @@ const inferenceProfilesData = JSON.parse(readFileSync(inferenceProfilesPath, "ut
 const availableModels = inferenceProfilesData.inferenceProfileSummaries
     .map(profile => profile.inferenceProfileId);
 
+function mapFinishReason(stopReason) {
+    return stopReason === "max_tokens" ? "length" : "stop";
+}
+
 function httpStream(responseStream, statusCode, contentType) {
     return awslambda.HttpResponseStream.from(responseStream, {
         statusCode,
@@ -109,7 +113,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
 
     const bedrockBody = {
         anthropic_version: "bedrock-2023-05-31",
-        max_tokens: body.max_tokens || 256,
+        max_tokens: body.max_tokens || 4096,
         messages: nonSystemMessages
     };
 
@@ -146,6 +150,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
         responseStream.write(`data: ${roleChunk}\n\n`);
 
         // Stream content chunks from Bedrock
+        let stopReason = "end_turn";
         for await (const event of response.body) {
             if (event.chunk) {
                 const chunk = JSON.parse(new TextDecoder().decode(event.chunk.bytes));
@@ -163,6 +168,8 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
                         });
                         responseStream.write(`data: ${contentChunk}\n\n`);
                     }
+                } else if (chunk.type === "message_delta") {
+                    stopReason = chunk.delta?.stop_reason || stopReason;
                 } else if (chunk.type === "message_stop") {
                     const stopChunk = JSON.stringify({
                         id: "chatcmpl-bedrock",
@@ -170,7 +177,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
                         created,
                         model: requestModel,
                         system_fingerprint: null,
-                        choices: [{ index: 0, delta: {}, logprobs: null, finish_reason: "stop" }]
+                        choices: [{ index: 0, delta: {}, logprobs: null, finish_reason: mapFinishReason(stopReason) }]
                     });
                     responseStream.write(`data: ${stopChunk}\n\n`);
                 }
@@ -204,7 +211,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
                 role: "assistant",
                 content: result.content[0].text
             },
-            finish_reason: "stop"
+            finish_reason: mapFinishReason(result.stop_reason)
         }]
     }));
     responseStream.end();
