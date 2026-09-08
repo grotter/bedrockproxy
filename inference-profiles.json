@@ -793,24 +793,6 @@
             "type": "SYSTEM_DEFINED"
         },
         {
-            "inferenceProfileName": "Global Anthropic Claude Sonnet 4.6",
-            "description": "Routes requests to Anthropic Claude Sonnet 4.6 globally across all supported AWS Regions.",
-            "createdAt": "2026-02-13T21:57:57.948832+00:00",
-            "updatedAt": "2026-04-23T22:00:14.650852+00:00",
-            "inferenceProfileArn": "arn:aws:bedrock:us-west-2:178700021514:inference-profile/global.anthropic.claude-sonnet-4-6",
-            "models": [
-                {
-                    "modelArn": "arn:aws:bedrock:::foundation-model/anthropic.claude-sonnet-4-6"
-                },
-                {
-                    "modelArn": "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-sonnet-4-6"
-                }
-            ],
-            "inferenceProfileId": "global.anthropic.claude-sonnet-4-6",
-            "status": "ACTIVE",
-            "type": "SYSTEM_DEFINED"
-        },
-        {
             "inferenceProfileName": "US Claude Sonnet 4",
             "description": "Routes requests to Claude Sonnet 4 in us-east-1, us-east-2 and us-west-2.",
             "createdAt": "2025-05-20T00:00:00+00:00",
@@ -1374,6 +1356,102 @@
                 }
             ],
             "inferenceProfileId": "global.anthropic.claude-opus-4-6-v1",
+            "status": "ACTIVE",
+            "type": "SYSTEM_DEFINED"
+        },
+        {
+            "inferenceProfileName": "US Anthropic Claude Fable 5.1",
+            "description": "Routes requests to Anthropic Claude Fable 5.1 in us-east-1, us-east-2 and us-west-2.",
+            "createdAt": "2026-08-28T19:56:10.995693+00:00",
+            "updatedAt": "2026-09-01T23:54:38.328137+00:00",
+            "inferenceProfileArn": "arn:aws:bedrock:us-west-2:178700021514:inference-profile/us.anthropic.claude-fable-5-1",
+            "models": [
+                {
+                    "modelArn": "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-fable-5-1"
+                },
+                {
+                    "modelArn": "arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-fable-5-1"
+                },
+                {
+                    "modelArn": "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-fable-5-1"
+                }
+            ],
+            "inferenceProfileId": "us.anthropic.claude-fable-5-1",
+            "status": "ACTIVE",
+            "type": "SYSTEM_DEFINED"
+        },
+        {
+            "inferenceProfileName": "Global Anthropic Claude Fable 5.1",
+            "description": "Routes requests to Anthropic Claude Fable 5.1 globally across all supported AWS Regions.",
+            "createdAt": "2026-08-28T19:56:11.161736+00:00",
+            "updatedAt": "2026-09-01T23:54:41.543459+00:00",
+            "inferenceProfileArn": "arn:aws:bedrock:us-west-2:178700021514:inference-profile/global.anthropic.claude-fable-5-1",
+            "models": [
+                {
+                    "modelArn": "arn:aws:bedrock:::foundation-model/anthropic.claude-fable-5-1"
+                },
+                {
+                    "modelArn": "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-fable-5-1"
+                }
+            ],
+            "inferenceProfileId": "global.anthropic.claude-fable-5-1",
+            "status": "ACTIVE",
+            "type": "SYSTEM_DEFINED"
+        },
+        {
+            "inferenceProfileName": "Global Anthropic Claude Sonnet 4.6",
+            "description": "Routes requests to Anthropic Claude Sonnet 4.6 globally across all supported AWS Regions.",
+            "createdAt": "2026-02-13T21:57:57.948832+00:00",
+            "updatedAt": "2026-09-02T09:35:28.661482+00:00",
+            "inferenceProfileArn": "arn:aws:bedrock:us-west-2:178700021514:inference-profile/global.anthropic.claude-sonnet-4-6",
+            "models": [
+                {
+                    "modelArn": "arn:aws:bedrock:::foundation-model/anthropic.claude-sonnet-4-6"
+                },
+                {
+                    "modelArn": "arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-sonnet-4-6"
+                }
+            ],
+            "inferenceProfileId": "global.anthropic.claude-sonnet-4-6",
+            "status": "ACTIVE",
+            "type": "SYSTEM_DEFINED"
+        },
+        {
+            "inferenceProfileName": "US OpenAI GPT-6 Astra",
+            "description": "Routes requests to GPT-6 Astra in us-east-1, us-east-2, us-west-2.",
+            "createdAt": "2026-09-08T19:55:22.455068+00:00",
+            "updatedAt": "2026-09-08T19:55:22.455068+00:00",
+            "inferenceProfileArn": "arn:aws:bedrock:us-west-2:178700021514:inference-profile/us.openai.gpt-6-astra",
+            "models": [
+                {
+                    "modelArn": "arn:aws:bedrock:us-east-1::foundation-model/openai.gpt-6-astra"
+                },
+                {
+                    "modelArn": "arn:aws:bedrock:us-east-2::foundation-model/openai.gpt-6-astra"
+                },
+                {
+                    "modelArn": "arn:aws:bedrock:us-west-2::foundation-model/openai.gpt-6-astra"
+                }
+            ],
+            "inferenceProfileId": "us.openai.gpt-6-astra",
+            "status": "ACTIVE",
+            "type": "SYSTEM_DEFINED"
+        },
+        {
+            "inferenceProfileName": "Global OpenAI GPT-6 Astra",
+            "description": "Routes requests to GPT-6 Astra globally across all supported AWS Regions.",
+            "createdAt": "2026-09-08T19:55:22.586123+00:00",
+            "updatedAt": "2026-09-08T19:55:22.586123+00:00",
+            "inferenceProfileArn": "arn:aws:bedrock:us-west-2:178700021514:inference-profile/global.openai.gpt-6-astra",
+            "models": [
+                {
+                    "modelArn": "arn:aws:bedrock:::foundation-model/openai.gpt-6-astra"
+                },
+                {
+                    "modelArn": "arn:aws:bedrock:us-west-2::foundation-model/openai.gpt-6-astra"
+                }
+            ],
+            "inferenceProfileId": "global.openai.gpt-6-astra",
             "status": "ACTIVE",
             "type": "SYSTEM_DEFINED"
         }

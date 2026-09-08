@@ -18,6 +18,8 @@ const inferenceProfilesData = JSON.parse(readFileSync(inferenceProfilesPath, "ut
 const availableModels = inferenceProfilesData.inferenceProfileSummaries
     .map(profile => profile.inferenceProfileId);
 
+const MAX_CONTINUATIONS = 5;
+
 function mapFinishReason(stopReason) {
     return stopReason === "max_tokens" ? "length" : "stop";
 }
@@ -113,7 +115,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
 
     const bedrockBody = {
         anthropic_version: "bedrock-2023-05-31",
-        max_tokens: body.max_tokens || 4096,
+        max_tokens: body.max_tokens || Number(process.env.MAX_TOKENS) || 8192,
         messages: nonSystemMessages
     };
 
@@ -125,15 +127,6 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
 
     if (isStreaming) {
         responseStream = httpStream(responseStream, 200, "text/event-stream");
-
-        const command = new InvokeModelWithResponseStreamCommand({
-            modelId: MODEL_ID,
-            body: JSON.stringify(bedrockBody),
-            contentType: "application/json",
-            accept: "application/json"
-        });
-
-        const response = await bedrock.send(command);
 
         const created = Math.floor(Date.now() / 1000);
         const requestModel = body.model || MODEL_ID;
@@ -149,40 +142,62 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
         });
         responseStream.write(`data: ${roleChunk}\n\n`);
 
-        // Stream content chunks from Bedrock
+        let currentMessages = nonSystemMessages;
         let stopReason = "end_turn";
-        for await (const event of response.body) {
-            if (event.chunk) {
-                const chunk = JSON.parse(new TextDecoder().decode(event.chunk.bytes));
 
-                if (chunk.type === "content_block_delta") {
-                    const text = chunk.delta?.text || "";
-                    if (text) {
-                        const contentChunk = JSON.stringify({
-                            id: "chatcmpl-bedrock",
-                            object: "chat.completion.chunk",
-                            created,
-                            model: requestModel,
-                            system_fingerprint: null,
-                            choices: [{ index: 0, delta: { content: text }, logprobs: null, finish_reason: null }]
-                        });
-                        responseStream.write(`data: ${contentChunk}\n\n`);
+        for (let attempt = 0; attempt <= MAX_CONTINUATIONS; attempt++) {
+            const command = new InvokeModelWithResponseStreamCommand({
+                modelId: MODEL_ID,
+                body: JSON.stringify({ ...bedrockBody, messages: currentMessages }),
+                contentType: "application/json",
+                accept: "application/json"
+            });
+
+            const response = await bedrock.send(command);
+
+            // Stream content chunks from Bedrock
+            let turnText = "";
+            for await (const event of response.body) {
+                if (event.chunk) {
+                    const chunk = JSON.parse(new TextDecoder().decode(event.chunk.bytes));
+
+                    if (chunk.type === "content_block_delta") {
+                        const text = chunk.delta?.text || "";
+                        if (text) {
+                            turnText += text;
+                            const contentChunk = JSON.stringify({
+                                id: "chatcmpl-bedrock",
+                                object: "chat.completion.chunk",
+                                created,
+                                model: requestModel,
+                                system_fingerprint: null,
+                                choices: [{ index: 0, delta: { content: text }, logprobs: null, finish_reason: null }]
+                            });
+                            responseStream.write(`data: ${contentChunk}\n\n`);
+                        }
+                    } else if (chunk.type === "message_delta") {
+                        stopReason = chunk.delta?.stop_reason || stopReason;
                     }
-                } else if (chunk.type === "message_delta") {
-                    stopReason = chunk.delta?.stop_reason || stopReason;
-                } else if (chunk.type === "message_stop") {
-                    const stopChunk = JSON.stringify({
-                        id: "chatcmpl-bedrock",
-                        object: "chat.completion.chunk",
-                        created,
-                        model: requestModel,
-                        system_fingerprint: null,
-                        choices: [{ index: 0, delta: {}, logprobs: null, finish_reason: mapFinishReason(stopReason) }]
-                    });
-                    responseStream.write(`data: ${stopChunk}\n\n`);
                 }
             }
+
+            if (stopReason !== "max_tokens" || attempt === MAX_CONTINUATIONS) {
+                break;
+            }
+
+            // Response was cut off by the token cap; continue the same turn.
+            currentMessages = [...currentMessages, { role: "assistant", content: turnText }];
         }
+
+        const stopChunk = JSON.stringify({
+            id: "chatcmpl-bedrock",
+            object: "chat.completion.chunk",
+            created,
+            model: requestModel,
+            system_fingerprint: null,
+            choices: [{ index: 0, delta: {}, logprobs: null, finish_reason: mapFinishReason(stopReason) }]
+        });
+        responseStream.write(`data: ${stopChunk}\n\n`);
 
         responseStream.write("data: [DONE]\n\n");
         responseStream.end();
@@ -192,15 +207,30 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
     // Non-streaming response
     responseStream = httpStream(responseStream, 200, "application/json");
 
-    const command = new InvokeModelCommand({
-        modelId: MODEL_ID,
-        body: JSON.stringify(bedrockBody),
-        contentType: "application/json",
-        accept: "application/json"
-    });
+    let currentMessages = nonSystemMessages;
+    let accumulatedContent = "";
+    let stopReason = "end_turn";
 
-    const response = await bedrock.send(command);
-    const result = JSON.parse(new TextDecoder().decode(response.body));
+    for (let attempt = 0; attempt <= MAX_CONTINUATIONS; attempt++) {
+        const command = new InvokeModelCommand({
+            modelId: MODEL_ID,
+            body: JSON.stringify({ ...bedrockBody, messages: currentMessages }),
+            contentType: "application/json",
+            accept: "application/json"
+        });
+
+        const response = await bedrock.send(command);
+        const result = JSON.parse(new TextDecoder().decode(response.body));
+        accumulatedContent += result.content[0].text;
+        stopReason = result.stop_reason;
+
+        if (stopReason !== "max_tokens" || attempt === MAX_CONTINUATIONS) {
+            break;
+        }
+
+        // Response was cut off by the token cap; continue the same turn.
+        currentMessages = [...currentMessages, { role: "assistant", content: result.content[0].text }];
+    }
 
     responseStream.write(JSON.stringify({
         id: "chatcmpl-bedrock",
@@ -209,9 +239,9 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
             index: 0,
             message: {
                 role: "assistant",
-                content: result.content[0].text
+                content: accumulatedContent
             },
-            finish_reason: mapFinishReason(result.stop_reason)
+            finish_reason: mapFinishReason(stopReason)
         }]
     }));
     responseStream.end();
