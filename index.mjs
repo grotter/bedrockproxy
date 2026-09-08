@@ -185,8 +185,14 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
                 break;
             }
 
-            // Response was cut off by the token cap; continue the same turn.
-            currentMessages = [...currentMessages, { role: "assistant", content: turnText }];
+            // Response was cut off by the token cap; ask the model to continue.
+            // (This model doesn't support assistant message prefill, so the
+            // conversation must still end on a user turn.)
+            currentMessages = [
+                ...currentMessages,
+                { role: "assistant", content: turnText },
+                { role: "user", content: "Continue exactly where you left off, with no repetition and no preamble." }
+            ];
         }
 
         const stopChunk = JSON.stringify({
@@ -228,8 +234,14 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream)
             break;
         }
 
-        // Response was cut off by the token cap; continue the same turn.
-        currentMessages = [...currentMessages, { role: "assistant", content: result.content[0].text }];
+        // Response was cut off by the token cap; ask the model to continue.
+        // (This model doesn't support assistant message prefill, so the
+        // conversation must still end on a user turn.)
+        currentMessages = [
+            ...currentMessages,
+            { role: "assistant", content: result.content[0].text },
+            { role: "user", content: "Continue exactly where you left off, with no repetition and no preamble." }
+        ];
     }
 
     responseStream.write(JSON.stringify({
